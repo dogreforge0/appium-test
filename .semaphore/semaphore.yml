@@ -1,4 +1,4 @@
-version: "2.1"
+version: "1.0"
 
 name: Continuous Integration Pipeline
 
@@ -31,7 +31,7 @@ blocks:
             - echo "Starting Android Emulator (Nexus 5X) and exposing VNC on port 5900..."
             - docker run -d --privileged -p 5900:5900 -p 6080:6080 -e DEVICE="Nexus_5X_API_30" --name android-emulator budtmo/docker-android
             - echo "Waiting for the Android emulator to fully initialize..."
-            - sleep 180  # Wait for the emulator to be fully ready
+            - sleep 120  # Wait for the emulator to be fully ready
 
             # Step 3: Show ngrok public URL for accessing the VNC
             - echo "ngrok tunnel established. Use the following URL to access the VNC server:"
