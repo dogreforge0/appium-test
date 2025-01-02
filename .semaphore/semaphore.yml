@@ -7,7 +7,7 @@ agent:
   containers:
     - name: appium
       image: "ubuntu:20.04"  # Use a more general Ubuntu image
-    - name: database
+    - name: database 
       image: 'registry.semaphoreci.com/postgres:11'
 blocks: 
   - name: Install Dependencies
