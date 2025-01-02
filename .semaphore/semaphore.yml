@@ -19,12 +19,11 @@ blocks:
           commands:
             - checkout
             - apt-get update
-            - apt-get install -y curl wget unzip erlang openssh-client  # Install basic dependencies
-            - echo "Erlang, OpenSSH, and curl installed successfully"
-            - export PATH=$PATH:/usr/bin  # Ensure correct path to binaries
+            - apt-get install -y curl wget unzip erlang openssh-client build-essential  # Install dependencies
+            - echo "Erlang, OpenSSH, curl, and build tools installed successfully"
             
-            # Install Erlang manually using curl and make
-            - curl -sSL https://www.erlang.org/download/otp_src_24.0.4.tar.gz -o otp.tar.gz  # Example Erlang install
+            # Manually install Erlang in case the `apt` package is not correct version
+            - curl -sSL https://www.erlang.org/download/otp_src_24.0.4.tar.gz -o otp.tar.gz
             - tar -xzvf otp.tar.gz
             - cd otp_src_24.0.4
             - ./configure
@@ -32,18 +31,19 @@ blocks:
             - sudo make install
             - cd ..  # Go back to previous directory
             - echo "Erlang installed successfully"
-            
+
             # Install the 'when' CLI tool
             - curl -L https://github.com/when-cli/when/releases/download/v0.1.0/when-linux-x86_64 -o /usr/local/bin/when
             - chmod +x /usr/local/bin/when
             - echo "'when' CLI installed successfully"
-            
-            # Verify installation of tools
-            - which ssh-agent  # Check if ssh-agent is available
-            - which ssh-keyscan  # Check if ssh-keyscan is available
-            - which ssh-add  # Check if ssh-add is available
-            - which curl  # Check if curl is installed now
-            - echo "SSH tools, curl, and Erlang are available, and the PATH is updated."
+
+            # Verify installation of all tools
+            - which erl  # Verify Erlang installation
+            - which ssh-agent  # Verify if ssh-agent is available
+            - which ssh-keyscan  # Verify if ssh-keyscan is available
+            - which ssh-add  # Verify if ssh-add is available
+            - which curl  # Verify if curl is installed now
+            - echo "All required tools are installed and available."
 
   - name: Setup Appium Emulator
     dependencies: []
@@ -53,13 +53,13 @@ blocks:
           commands:
             - checkout
             - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip  # Install only necessary tools
+            - apt-get install -y openjdk-11-jdk curl wget unzip  # Install necessary Android tools
             - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
             - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
             - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
             - /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android "platform-tools" "emulator" "system-images;android-29;google_apis;x86_64"
             - /usr/local/android/cmdline-tools/bin/avdmanager create avd -n test_avd -k "system-images;android-29;google_apis;x86_64" --device "Nexus 5X" --force
-            - nohup /usr/local/android/emulator/emulator -avd test_avd -no-window -gpu swiftshader_indirect &  # Start emulator in the background
+            - nohup /usr/local/android/emulator/emulator -avd test_avd -no-window -gpu swiftshader_indirect &  # Start emulator in background
             - adb wait-for-device  # Wait for the emulator to fully start
             - echo "Appium and Android Emulator are running."
 
@@ -71,9 +71,9 @@ blocks:
         - name: Run Appium Test
           commands:
             - echo "Running Appium test..."
-            - appium &  # Start Appium server in the background
+            - appium &  # Start Appium server in background
             - sleep 10  # Ensure Appium has time to start up
-            - node appium_test.js  # Run the Appium test script
+            - node appium_test.js  # Run Appium test script
             - node capture_screenshot.js  # Capture screenshot using Appium
             - mv screenshot.png /tmp/screenshot.png  # Move screenshot to /tmp
             - artifact push job /tmp/screenshot.png  # Push screenshot as artifact
