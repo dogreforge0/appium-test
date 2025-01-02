@@ -9,7 +9,7 @@ agent:
       image: "ubuntu:20.04"  # Use a more general Ubuntu image
     - name: database
       image: 'registry.semaphoreci.com/postgres:11'
-blocks:
+blocks: 
   - name: Install Dependencies
     dependencies: []
     task:
