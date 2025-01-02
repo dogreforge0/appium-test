@@ -1,90 +1,67 @@
 version: v1.0
-name: Continuous Integration Pipelines
+
+name: Continuous Integration Pipeline
+
 agent:
   machine:
-    type: f1-standard-2
+    type: e1-standard-2
     os_image: ubuntu2004
   containers:
+    - name: android-emulator
+      image: "budtmo/docker-android"
+      resource_requests:
+        memory: 4096Mi
+        cpu: 2
     - name: appium
-      image: "appium/appium:latest"  # Official Appium Docker image
-    - name: database
-      image: 'registry.semaphoreci.com/postgres:11'
+      image: "appium/appium"  # For Appium automation
 
 blocks:
-  - name: Install Dependencies
-    dependencies: []
+  - name: Setup and Run Emulator
     task:
       jobs:
-        - name: Install Required Tools
+        - name: Start Android Emulator and Take Screenshot
           commands:
             - checkout
-            - apt-get update
-            - apt-get install -y curl wget unzip erlang openssh-client build-essential  # Install dependencies
-            - echo "Erlang, OpenSSH, curl, and build tools installed successfully"
+            - docker pull budtmo/docker-android  # Make sure the latest image is used
+            - docker run -d --privileged -p 6080:6080 -e DEVICE="Nexus_5X_API_29" --name android-emulator budtmo/docker-android
+            - sleep 60  # Wait for the emulator to initialize
+            - echo "Android emulator running."
+
+            # Optional: Access the emulator via a VNC server (for debugging)
+            - echo "You can now access the emulator through http://localhost:6080"
+
+            # Assuming Appium is installed in the appium container:
+            - docker exec android-emulator /bin/bash -c "apt-get update && apt-get install -y unzip wget curl"  # Install dependencies inside the container
+            - docker exec android-emulator /bin/bash -c "wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O /tmp/cmdline-tools.zip"
+            - docker exec android-emulator /bin/bash -c "unzip /tmp/cmdline-tools.zip -d /usr/local/android"
+            - docker exec android-emulator /bin/bash -c "/usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses"
+            - docker exec android-emulator /bin/bash -c "/usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android platform-tools emulator"
+            - docker exec android-emulator /bin/bash -c "/usr/local/android/emulator/emulator -avd Nexus_5X_API_29 -no-window -gpu swiftshader_indirect &"
+
+            # After emulator is running, set up Appium to interact with it
+            - sleep 120  # Ensure the emulator is fully initialized
+
+            # Install Appium client and start Appium server
+            - docker exec appium /bin/bash -c "npm install -g appium"  # Install Appium
+            - docker exec appium /bin/bash -c "appium &"  # Start Appium server
+
+            # Now take a screenshot using Appium (or directly using ADB commands)
+            - docker exec appium /bin/bash -c "appium & sleep 5 && node capture_screenshot.js"
             
-            # Manually install Erlang in case the `apt` package is not correct version
-            - curl -sSL https://www.erlang.org/download/otp_src_24.0.4.tar.gz -o otp.tar.gz
-            - tar -xzvf otp.tar.gz
-            - cd otp_src_24.0.4
-            - ./configure
-            - make
-            - sudo make install
-            - cd ..  # Go back to previous directory
-            - echo "Erlang installed successfully"
+            # Assuming `capture_screenshot.js` is an Appium script to capture a screenshot, and store it at `/tmp/screenshot.png`
+            - docker exec appium /bin/bash -c "mv /tmp/screenshot.png /tmp/screenshot.png"
 
-            # Install the 'when' CLI tool
-            - curl -L https://github.com/when-cli/when/releases/download/v0.1.0/when-linux-x86_64 -o /usr/local/bin/when
-            - chmod +x /usr/local/bin/when
-            - echo "'when' CLI installed successfully"
-
-            # Verify installation of all tools
-            - which erl  # Verify Erlang installation
-            - which ssh-agent  # Verify if ssh-agent is available
-            - which ssh-keyscan  # Verify if ssh-keyscan is available
-            - which ssh-add  # Verify if ssh-add is available
-            - which curl  # Verify if curl is installed now
-            - echo "All required tools are installed and available."
-
-  - name: Setup Appium Emulator
-    dependencies: []
-    task:
-      jobs:
-        - name: Setup and Start Appium Emulator
-          commands:
-            - checkout
-            - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip  # Install necessary Android tools
-            - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
-            - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
-            - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
-            - /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android "platform-tools" "emulator" "system-images;android-29;google_apis;x86_64"
-            - /usr/local/android/cmdline-tools/bin/avdmanager create avd -n test_avd -k "system-images;android-29;google_apis;x86_64" --device "Nexus 5X" --force
-            - nohup /usr/local/android/emulator/emulator -avd test_avd -no-window -gpu swiftshader_indirect &  # Start emulator in background
-            - adb wait-for-device  # Wait for the emulator to fully start
-            - echo "Appium and Android Emulator are running."
-
-  - name: Run Appium Test and Capture Screenshot
+            # You can use the `artifact push` command to save the screenshot for later use
+            - artifact push /tmp/screenshot.png
+            - echo "Screenshot taken and stored."
+  - name: Cleanup
     dependencies:
-      - Setup Appium Emulator
+      - Setup and Run Emulator
     task:
       jobs:
-        - name: Run Appium Test
+        - name: Stop Emulator and Clean Up
           commands:
-            - echo "Running Appium test..."
-            - appium &  # Start Appium server in background
-            - sleep 10  # Ensure Appium has time to start up
-            - node appium_test.js  # Run Appium test script
-            - node capture_screenshot.js  # Capture screenshot using Appium
-            - mv screenshot.png /tmp/screenshot.png  # Move screenshot to /tmp
-            - artifact push job /tmp/screenshot.png  # Push screenshot as artifact
-
-  - name: Clean up and Finalize
-    dependencies:
-      - Run Appium Test and Capture Screenshot
-    task:
-      jobs:
-        - name: Clean up
-          commands:
-            - echo "Cleaning up... Removing temporary files."
-            - rm -rf /tmp/screenshot.png  # Clean-up step after artifact is pushed
-            - echo "Clean-up complete"
+            - echo "Cleaning up..."
+            - docker stop android-emulator
+            - docker rm android-emulator
+            - echo "Emulator stopped and container removed."
