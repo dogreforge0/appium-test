@@ -45,4 +45,4 @@ blocks:
               # Capture screenshot using Appium and save to file
               node capture_screenshot.js  # The JavaScript file should control the Appium client to capture the screenshot
             - mv screenshot.png /tmp/screenshot.png  # Move the screenshot to /tmp
-            - artifact push job /tmp/screenshot.png  # Push screenshot as artifact
+            - artifact push job /tmp/screenshot.png  # Push screenshot as artifact  
