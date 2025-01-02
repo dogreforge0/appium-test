@@ -6,30 +6,11 @@ agent:
     os_image: ubuntu2004
   containers:
     - name: appium
-      image: "appium/appium:latest"  # Official Appium Docker image with Appium and emulator
+      image: "appium/appium:latest"  # Official Appium Docker image
     - name: database
       image: 'registry.semaphoreci.com/postgres:11'
 
 blocks:
-  - name: Install Dependencies
-    dependencies: []
-    task:
-      jobs:
-        - name: Install Required Tools
-          commands:
-            - checkout
-            - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip erlang openssh-client  # Install missing dependencies
-            - echo "Required tools are installed successfully"
-            # Fix the environment variables to ensure the correct path is set for Erlang and SSH tools
-            - export PATH=$PATH:/usr/bin
-            - which erl || echo "Erlang not found"
-            - which ssh-agent || echo "ssh-agent not found"
-            - which ssh-keyscan || echo "ssh-keyscan not found"
-            - which ssh-add || echo "ssh-add not found"
-            - which curl || echo "curl not found"
-            - echo "Required tools checked and paths set."
-
   - name: Setup Appium Emulator
     dependencies: []
     task:
@@ -38,7 +19,7 @@ blocks:
           commands:
             - checkout
             - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip
+            - apt-get install -y openjdk-11-jdk curl wget unzip  # Install dependencies
             - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
             - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
             - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
