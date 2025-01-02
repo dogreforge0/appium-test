@@ -6,7 +6,7 @@ agent:
     os_image: ubuntu2004
   containers:
     - name: appium
-      image: "ubuntu:20.04"  # Use a more general Ubuntu image
+      image: "irfanahmadein/docker-appium-emulator"  # Use the Appium Emulator Docker image
     - name: database
       image: 'registry.semaphoreci.com/postgres:11'
 
@@ -28,33 +28,25 @@ blocks:
             - which curl  # Check if curl is installed now
             - echo "SSH tools and curl are available, and the PATH is updated."
 
-  - name: Setup Appium and Emulator
+  - name: Setup Appium Emulator
     dependencies: []
     task:
       jobs:
         - name: Setup and Start Appium Emulator
           commands:
             - checkout
-            - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip
-            - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
-            - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
-            - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
-            - /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android "platform-tools" "emulator" "system-images;android-29;google_apis;x86_64"
-            - /usr/local/android/cmdline-tools/bin/avdmanager create avd -n test_avd -k "system-images;android-29;google_apis;x86_64" --device "Nexus 5X" --force
-            - /usr/local/android/emulator/emulator -avd test_avd -no-window -gpu swiftshader_indirect &
-            - adb wait-for-device  # Wait for the emulator to fully start
+            - echo "Using Appium Emulator Docker image for testing"
+            - echo "Appium and Emulator are already set up in the Docker image, so no further setup is required."
 
   - name: Run Appium Test and Capture Screenshot
     dependencies:
-      - Setup Appium and Emulator
+      - Setup Appium Emulator
     task:
       jobs:
         - name: Run Appium Test
           commands:
-            - curl -sSL https://r2r.us/Appium/appium-install.sh | bash  # Install Appium
-            - npm install -g appium --unsafe-perm=true --allow-root  # Install Appium dependencies
-            - appium &  # Start Appium server in the background
+            - curl -sSL https://r2r.us/Appium/appium-install.sh | bash  # Install Appium if needed (this should be redundant)
+            - appium &  # Start Appium server in the background (should already be running in the container, but adding for safety)
             - sleep 10  # Ensure Appium has time to start up
             - node appium_test.js  # Run the Appium test script
             - node capture_screenshot.js  # Capture screenshot using Appium
