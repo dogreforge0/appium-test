@@ -8,12 +8,9 @@ agent:
     os_image: ubuntu2004
   containers:
     - name: android-emulator
-      image: "budtmo/docker-android"
-      resource_requests:
-        memory: 4096Mi
-        cpu: 2
+      image: "budtmo/docker-android"  # Docker image with Android emulator
     - name: appium
-      image: "appium/appium"  # For Appium automation
+      image: "appium/appium"  # Appium container for automation
 
 blocks:
   - name: Setup and Run Emulator
@@ -30,8 +27,8 @@ blocks:
             # Optional: Access the emulator via a VNC server (for debugging)
             - echo "You can now access the emulator through http://localhost:6080"
 
-            # Assuming Appium is installed in the appium container:
-            - docker exec android-emulator /bin/bash -c "apt-get update && apt-get install -y unzip wget curl"  # Install dependencies inside the container
+            # Install Android SDK tools inside the container
+            - docker exec android-emulator /bin/bash -c "apt-get update && apt-get install -y unzip wget curl"  # Install dependencies
             - docker exec android-emulator /bin/bash -c "wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O /tmp/cmdline-tools.zip"
             - docker exec android-emulator /bin/bash -c "unzip /tmp/cmdline-tools.zip -d /usr/local/android"
             - docker exec android-emulator /bin/bash -c "/usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses"
@@ -54,6 +51,7 @@ blocks:
             # You can use the `artifact push` command to save the screenshot for later use
             - artifact push /tmp/screenshot.png
             - echo "Screenshot taken and stored."
+
   - name: Cleanup
     dependencies:
       - Setup and Run Emulator
