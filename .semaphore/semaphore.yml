@@ -10,7 +10,7 @@ agent:
     - name: android-emulator
       image: "budtmo/docker-android"
     - name: appium
-      image: "appium/appium"
+      image: "appium/appium" 
 
 blocks:
   - name: Setup and Run Emulator
