@@ -10,7 +10,7 @@ agent:
     - name: database
       image: 'registry.semaphoreci.com/postgres:11'
 
-blocks:
+blocks: 
   - name: Run Appium Test and Capture Screenshot
     dependencies: []
     task:
