@@ -8,9 +8,9 @@ agent:
     os_image: ubuntu2004
   containers:
     - name: android-emulator
-      image: "budtmo/docker-android"  # Docker image with Android emulator
+      image: "budtmo/docker-android"
     - name: appium
-      image: "appium/appium"  # Appium container for automation
+      image: "appium/appium"
 
 blocks:
   - name: Setup and Run Emulator
@@ -19,45 +19,28 @@ blocks:
         - name: Start Android Emulator and Take Screenshot
           commands:
             - checkout
-            - docker pull budtmo/docker-android  # Make sure the latest image is used
-            - docker run -d --privileged -p 6080:6080 -e DEVICE="Nexus_5X_API_29" --name android-emulator budtmo/docker-android
-            - sleep 60  # Wait for the emulator to initialize
-            - echo "Android emulator running."
-
-            # Optional: Access the emulator via a VNC server (for debugging)
-            - echo "You can now access the emulator through http://localhost:6080"
-
-            # Install Android SDK tools inside the container
-            - docker exec android-emulator /bin/bash -c "apt-get update && apt-get install -y unzip wget curl"  # Install dependencies
-            - docker exec android-emulator /bin/bash -c "wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip -O /tmp/cmdline-tools.zip"
-            - docker exec android-emulator /bin/bash -c "unzip /tmp/cmdline-tools.zip -d /usr/local/android"
-            - docker exec android-emulator /bin/bash -c "/usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses"
-            - docker exec android-emulator /bin/bash -c "/usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android platform-tools emulator"
-            - docker exec android-emulator /bin/bash -c "/usr/local/android/emulator/emulator -avd Nexus_5X_API_29 -no-window -gpu swiftshader_indirect &"
-
-            # After emulator is running, set up Appium to interact with it
-            - sleep 120  # Ensure the emulator is fully initialized
-
-            # Install Appium client and start Appium server
-            - docker exec appium /bin/bash -c "npm install -g appium"  # Install Appium
+            - docker pull budtmo/docker-android  # Pull latest image
+            - docker run -d --privileged -p 6080:6080 -e DEVICE="Nexus_5X_API_30" --name android-emulator budtmo/docker-android
+            - echo "Waiting for the Android emulator to fully initialize..."
+            - sleep 180  # Increase the wait time for emulator startup
+            - echo "Starting Appium server..."
+            - docker exec appium /bin/bash -c "npm install -g appium"  # Install Appium if not installed
             - docker exec appium /bin/bash -c "appium &"  # Start Appium server
+            - echo "Appium server started."
+            - sleep 10  # Give Appium time to start
 
-            # Now take a screenshot using Appium (or directly using ADB commands)
-            - docker exec appium /bin/bash -c "appium & sleep 5 && node capture_screenshot.js"
-            
-            # Assuming `capture_screenshot.js` is an Appium script to capture a screenshot, and store it at `/tmp/screenshot.png`
-            - docker exec appium /bin/bash -c "mv /tmp/screenshot.png /tmp/screenshot.png"
-
-            # You can use the `artifact push` command to save the screenshot for later use
+            # Take a screenshot using Appium (or ADB commands)
+            - docker exec appium /bin/bash -c "node capture_screenshot.js"
+            - echo "Screenshot taken and saved."
             - artifact push /tmp/screenshot.png
-            - echo "Screenshot taken and stored."
+            - echo "Screenshot stored successfully."
 
   - name: Cleanup
     task:
       jobs:
         - name: Stop Emulator and Clean Up
           commands:
-            - echo "Cleaning up..."
+            - echo "Stopping emulator..."
             - docker stop android-emulator
             - docker rm android-emulator
             - echo "Emulator stopped and container removed."
