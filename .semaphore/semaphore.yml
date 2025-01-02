@@ -32,7 +32,7 @@ blocks:
       jobs:
         - name: Setup and Start Appium Emulator
           commands:
-            - checkout
+            - checkout 
             - apt-get update
             - apt-get install -y openjdk-11-jdk curl wget unzip
             - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
