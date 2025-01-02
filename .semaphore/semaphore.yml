@@ -19,8 +19,8 @@ blocks:
             - checkout
             - apt-get update
             - apt-get install -y openjdk-11-jdk curl wget unzip erlang openssh-client  # Install missing dependencies
-            - # Ensure that the required tools are available
-            - echo "Erlang and OpenSSH installed successfully"
+            - echo "Erlang and OpenSSH installed successfully"  # Confirm installation
+
   - name: Setup Appium and Emulator
     dependencies: []
     task:
