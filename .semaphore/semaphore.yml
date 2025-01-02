@@ -29,9 +29,14 @@ blocks:
         - name: Setup and Start Appium Emulator
           commands:
             - checkout
-            - echo "Starting the Appium Docker container with emulator..."
-            - # Start Android emulator in the background
-            - nohup /opt/android-sdk/emulator/emulator -avd test_avd -no-window -gpu swiftshader_indirect &  # Start emulator
+            - apt-get update
+            - apt-get install -y openjdk-11-jdk curl wget unzip
+            - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
+            - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
+            - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
+            - /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android "platform-tools" "emulator" "system-images;android-29;google_apis;x86_64"
+            - /usr/local/android/cmdline-tools/bin/avdmanager create avd -n test_avd -k "system-images;android-29;google_apis;x86_64" --device "Nexus 5X" --force
+            - nohup /usr/local/android/emulator/emulator -avd test_avd -no-window -gpu swiftshader_indirect &  # Start emulator in the background
             - adb wait-for-device  # Wait for the emulator to fully start
             - echo "Appium and Android Emulator are running."
 
