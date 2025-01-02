@@ -11,6 +11,40 @@ agent:
       image: 'registry.semaphoreci.com/postgres:11'
 
 blocks:
+  - name: Install Dependencies
+    dependencies: []
+    task:
+      jobs:
+        - name: Install Required Tools
+          commands:
+            - checkout
+            - apt-get update
+            - apt-get install -y curl wget unzip erlang openssh-client  # Install basic dependencies
+            - echo "Erlang, OpenSSH, and curl installed successfully"
+            - export PATH=$PATH:/usr/bin  # Ensure correct path to binaries
+            
+            # Install Erlang manually using curl and make
+            - curl -sSL https://www.erlang.org/download/otp_src_24.0.4.tar.gz -o otp.tar.gz  # Example Erlang install
+            - tar -xzvf otp.tar.gz
+            - cd otp_src_24.0.4
+            - ./configure
+            - make
+            - sudo make install
+            - cd ..  # Go back to previous directory
+            - echo "Erlang installed successfully"
+            
+            # Install the 'when' CLI tool
+            - curl -L https://github.com/when-cli/when/releases/download/v0.1.0/when-linux-x86_64 -o /usr/local/bin/when
+            - chmod +x /usr/local/bin/when
+            - echo "'when' CLI installed successfully"
+            
+            # Verify installation of tools
+            - which ssh-agent  # Check if ssh-agent is available
+            - which ssh-keyscan  # Check if ssh-keyscan is available
+            - which ssh-add  # Check if ssh-add is available
+            - which curl  # Check if curl is installed now
+            - echo "SSH tools, curl, and Erlang are available, and the PATH is updated."
+
   - name: Setup Appium Emulator
     dependencies: []
     task:
@@ -19,7 +53,7 @@ blocks:
           commands:
             - checkout
             - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip  # Install only the necessary tools
+            - apt-get install -y openjdk-11-jdk curl wget unzip  # Install only necessary tools
             - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
             - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
             - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
