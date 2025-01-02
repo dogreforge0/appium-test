@@ -19,12 +19,14 @@ blocks:
             - checkout
             - apt-get update
             - apt-get install -y openjdk-11-jdk curl wget unzip erlang openssh-client  # Install curl explicitly
-            - echo "Erlang, OpenSSH, and curl installed successfully"
+            - echo "Installing Erlang, OpenSSH, and curl..."
+            - apt-get install -y curl
+            - echo "Curl installed successfully."
+            - which curl || echo "Curl installation failed."  # Check curl installation
             - export PATH=$PATH:/usr/bin  # Ensure correct path to binaries
             - which ssh-agent  # Check if ssh-agent is installed and available
             - which ssh-keyscan  # Check if ssh-keyscan is installed and available
             - which ssh-add  # Check if ssh-add is installed and available
-            - which curl  # Check if curl is installed now
             - echo "SSH tools and curl are available, and the PATH is updated."
   - name: Setup Appium and Emulator
     dependencies: []
