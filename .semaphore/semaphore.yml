@@ -6,7 +6,7 @@ agent:
     os_image: ubuntu2004
   containers:
     - name: appium
-      image: "ubuntu:20.04"  # Using Ubuntu image for more flexibility
+      image: "ubuntu:20.04"  # Use a more general Ubuntu image
     - name: database
       image: 'registry.semaphoreci.com/postgres:11'
 blocks:
@@ -18,13 +18,14 @@ blocks:
           commands:
             - checkout
             - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip erlang openssh-client
-            - echo "Erlang and OpenSSH installed successfully"
+            - apt-get install -y openjdk-11-jdk curl wget unzip erlang openssh-client  # Install curl explicitly
+            - echo "Erlang, OpenSSH, and curl installed successfully"
             - export PATH=$PATH:/usr/bin  # Ensure correct path to binaries
             - which ssh-agent  # Check if ssh-agent is installed and available
             - which ssh-keyscan  # Check if ssh-keyscan is installed and available
             - which ssh-add  # Check if ssh-add is installed and available
-            - echo "SSH tools are available and the PATH is updated."
+            - which curl  # Check if curl is installed now
+            - echo "SSH tools and curl are available, and the PATH is updated."
   - name: Setup Appium and Emulator
     dependencies: []
     task:
