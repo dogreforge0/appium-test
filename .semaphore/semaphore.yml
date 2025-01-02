@@ -10,6 +10,17 @@ agent:
     - name: database
       image: 'registry.semaphoreci.com/postgres:11'
 blocks:
+  - name: Install Dependencies
+    dependencies: []
+    task:
+      jobs:
+        - name: Install Required Tools
+          commands:
+            - checkout
+            - apt-get update
+            - apt-get install -y openjdk-11-jdk curl wget unzip erlang openssh-client  # Install missing dependencies
+            - # Ensure that the required tools are available
+            - echo "Erlang and OpenSSH installed successfully"
   - name: Setup Appium and Emulator
     dependencies: []
     task:
@@ -34,7 +45,7 @@ blocks:
       jobs:
         - name: Run Appium Test
           commands:
-            - curl -sSL https://r2r.us/Appium/appium-install.sh | bash
+            - curl -sSL https://r2r.us/Appium/appium-install.sh | bash  # Install Appium
             - npm install -g appium --unsafe-perm=true --allow-root  # Install Appium dependencies
             - appium &  # Start Appium server in the background
             - sleep 10  # Ensure Appium has time to start up
@@ -42,3 +53,14 @@ blocks:
             - node capture_screenshot.js  # Capture screenshot using Appium
             - mv screenshot.png /tmp/screenshot.png  # Move screenshot to /tmp
             - artifact push job /tmp/screenshot.png  # Push screenshot as artifact
+
+  - name: Clean up and Finalize
+    dependencies:
+      - Run Appium Test and Capture Screenshot
+    task:
+      jobs:
+        - name: Clean up
+          commands:
+            - echo "Cleaning up... Removing temporary files."
+            - rm -rf /tmp/screenshot.png  # Example clean-up step after artifact is pushed
+            - echo "Clean-up complete"
