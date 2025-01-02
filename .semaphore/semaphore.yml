@@ -6,7 +6,7 @@ agent:
     os_image: ubuntu2004
   containers:
     - name: appium
-      image: "irfanahmadein/docker-appium-emulator"  # Use the Appium Emulator Docker image
+      image: "rgonalo/appium-emulator"  # Use the Appium Emulator Docker image
     - name: database
       image: 'registry.semaphoreci.com/postgres:11'
 
