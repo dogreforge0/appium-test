@@ -20,6 +20,8 @@ blocks:
             - apt-get update
             - apt-get install -y openjdk-11-jdk curl wget unzip erlang openssh-client  # Install openssh-client
             - echo "Erlang and OpenSSH installed successfully"  # Confirm installation
+            - export PATH=$PATH:/usr/bin/ssh-agent  # Add SSH tools path to environment
+            - echo $PATH  # Debug to confirm path is updated
 
   - name: Setup Appium and Emulator
     dependencies: []
@@ -30,6 +32,8 @@ blocks:
             - checkout
             - apt-get update
             - apt-get install -y openjdk-11-jdk curl wget unzip openssh-client  # Ensure openssh-client is installed
+            - export PATH=$PATH:/usr/bin/ssh-agent  # Add SSH tools path to environment
+            - echo $PATH  # Debug to confirm path is updated
             - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
             - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
             - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
