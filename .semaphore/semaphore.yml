@@ -6,66 +6,22 @@ agent:
     os_image: ubuntu2004
   containers:
     - name: appium
-      image: "ubuntu:20.04"  # Use a more general Ubuntu image
-    - name: database 
+      image: "appium/appium:latest"  # Official Appium Docker image
+    - name: database
       image: 'registry.semaphoreci.com/postgres:11'
-blocks: 
-  - name: Install Dependencies
-    dependencies: []
-    task:
-      jobs:
-        - name: Install Required Tools
-          commands:
-            - checkout
-            - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip erlang openssh-client  # Install curl explicitly
-            - echo "Installing Erlang, OpenSSH, and curl..."
-            - apt-get install -y curl
-            - echo "Curl installed successfully."
-            - which curl || echo "Curl installation failed."  # Check curl installation
-            - export PATH=$PATH:/usr/bin  # Ensure correct path to binaries
-            - which ssh-agent  # Check if ssh-agent is installed and available
-            - which ssh-keyscan  # Check if ssh-keyscan is installed and available
-            - which ssh-add  # Check if ssh-add is installed and available
-            - echo "SSH tools and curl are available, and the PATH is updated."
-  - name: Setup Appium and Emulator
-    dependencies: []
-    task:
-      jobs:
-        - name: Setup and Start Appium Emulator
-          commands:
-            - checkout 
-            - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip
-            - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
-            - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
-            - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
-            - /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android "platform-tools" "emulator" "system-images;android-29;google_apis;x86_64"
-            - /usr/local/android/cmdline-tools/bin/avdmanager create avd -n test_avd -k "system-images;android-29;google_apis;x86_64" --device "Nexus 5X" --force
-            - /usr/local/android/emulator/emulator -avd test_avd -no-window -gpu swiftshader_indirect &
-            - adb wait-for-device  # Wait for the emulator to fully start
+
+blocks:
   - name: Run Appium Test and Capture Screenshot
-    dependencies:
-      - Setup Appium and Emulator
+    dependencies: []
     task:
       jobs:
         - name: Run Appium Test
           commands:
-            - curl -sSL https://r2r.us/Appium/appium-install.sh | bash  # Install Appium
-            - npm install -g appium --unsafe-perm=true --allow-root  # Install Appium dependencies
-            - appium &  # Start Appium server in the background
-            - sleep 10  # Ensure Appium has time to start up
+            - checkout
+            - curl -sSL https://r2r.us/Appium/appium-install.sh | bash  # If not using pre-built Docker image with appium installed
+            - appium &  # Start Appium server
+            - sleep 10  # Ensure Appium is ready
             - node appium_test.js  # Run the Appium test script
             - node capture_screenshot.js  # Capture screenshot using Appium
             - mv screenshot.png /tmp/screenshot.png  # Move screenshot to /tmp
             - artifact push job /tmp/screenshot.png  # Push screenshot as artifact
-  - name: Clean up and Finalize
-    dependencies:
-      - Run Appium Test and Capture Screenshot
-    task:
-      jobs:
-        - name: Clean up
-          commands:
-            - echo "Cleaning up... Removing temporary files."
-            - rm -rf /tmp/screenshot.png  # Example clean-up step after artifact is pushed
-            - echo "Clean-up complete"
