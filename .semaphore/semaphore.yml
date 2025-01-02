@@ -1,1 +1,48 @@
-ddf
+version: v1.0
+name: Continuous Integration Pipelines
+agent:
+  machine:
+    type: f1-standard-2
+    os_image: ubuntu2004
+  containers:
+    - name: appium
+      image: "appium/appium:latest"  # Use the Appium Docker image
+    - name: database
+      image: 'registry.semaphoreci.com/postgres:11'
+blocks:
+  - name: Setup Appium and Emulator
+    dependencies: []
+    task:
+      jobs:
+        - name: Setup and Start Appium Emulator
+          commands:
+            - checkout
+            - apt-get update
+            - apt-get install -y openjdk-11-jdk # Install Java for Appium
+            - apt-get install -y curl wget unzip
+            - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
+            - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
+            - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
+            - /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android "platform-tools" "emulator" "system-images;android-29;google_apis;x86_64"
+            - /usr/local/android/emulator/emulator -avd test_avd -no-window -gpu swiftshader_indirect &
+            - sleep 60  # Wait for the emulator to start
+
+  - name: Run Appium Test and Capture Screenshot
+    dependencies:
+      - Setup Appium and Emulator
+    task:
+      jobs:
+        - name: Run Appium Test
+          commands:
+            - curl -sSL https://r2r.us/Appium/appium-install.sh | bash
+            - appium &  # Start Appium server
+            - sleep 10  # Wait for Appium to start
+            - npm install -g appium --unsafe-perm=true --allow-root  # Install Appium dependencies
+            - |
+              # Example script to run Appium test
+              node appium_test.js
+            - |
+              # Capture screenshot using Appium and save to file
+              node capture_screenshot.js  # The JavaScript file should control the Appium client to capture the screenshot
+            - mv screenshot.png /tmp/screenshot.png  # Move the screenshot to /tmp
+            - artifact push job /tmp/screenshot.png  # Push screenshot as artifact
