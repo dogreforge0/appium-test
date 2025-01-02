@@ -1,5 +1,3 @@
-version: v1.0
-
 name: Continuous Integration Pipeline
 
 agent:
@@ -16,31 +14,40 @@ blocks:
   - name: Setup and Run Emulator
     task:
       jobs:
-        - name: Start Android Emulator and Take Screenshot
+        - name: Start ngrok Tunnel and Run Emulator
           commands:
             - checkout
-            - docker pull budtmo/docker-android  # Pull latest image
-            - docker run -d --privileged -p 6080:6080 -e DEVICE="Nexus_5X_API_30" --name android-emulator budtmo/docker-android
+            - docker pull budtmo/docker-android  # Pull the latest image for Android emulator
+            
+            # Step 1: Start ngrok to expose VNC (port 5900)
+            - echo "Starting ngrok to expose VNC on port 5900..."
+            - docker run -d --name ngrok -e NGROK_AUTHTOKEN=2gaat4S18SY42iMHadpLGAGKTf8_4SJ6uBXQ7r1QDzKDwe5YA -e NGROK_PORT=5900 wernight/ngrok ngrok tcp 5900
+            - echo "Waiting for ngrok tunnel to establish..."
+            - sleep 5  # Allow time for ngrok to establish the tunnel
+            
+            # Step 2: Start Android Emulator and ensure it exposes VNC on port 5900
+            - echo "Starting Android Emulator (Nexus 5X) and exposing VNC on port 5900..."
+            - docker run -d --privileged -p 5900:5900 -p 6080:6080 -e DEVICE="Nexus_5X_API_30" --name android-emulator budtmo/docker-android
             - echo "Waiting for the Android emulator to fully initialize..."
             - sleep 180  # Wait for the emulator to be fully ready
-            - echo "Starting ngrok to expose VNC..."
-            - docker exec android-emulator /bin/bash -c "wget https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip && unzip ngrok-stable-linux-amd64.zip && mv ngrok /usr/local/bin"
-            
-            # Add the ngrok authtoken to authenticate with your ngrok account
-            - docker exec android-emulator /bin/bash -c "ngrok authtoken 2gaat4S18SY42iMHadpLGAGKTf8_4SJ6uBXQ7r1QDzKDwe5YA"
 
-            - docker exec android-emulator /bin/bash -c "ngrok tcp 5900"
+            # Step 3: Show ngrok public URL for accessing the VNC
             - echo "ngrok tunnel established. Use the following URL to access the VNC server:"
-            - docker exec android-emulator /bin/bash -c "curl http://localhost:4040/api/tunnels"  # Show ngrok URL
+            - docker exec ngrok /bin/sh -c "curl http://localhost:4040/api/tunnels"  # Show ngrok URL
+            
+            # Step 4: Start Appium server
             - echo "Starting Appium server..."
             - docker exec appium /bin/bash -c "npm install -g appium"  # Install Appium if not installed
             - docker exec appium /bin/bash -c "appium &"  # Start Appium server
             - echo "Appium server started."
             - sleep 10  # Give Appium time to start
 
-            # Take a screenshot using Appium (or ADB commands)
+            # Step 5: Take a screenshot using Appium (or ADB commands)
+            - echo "Taking screenshot using Appium..."
             - docker exec appium /bin/bash -c "node capture_screenshot.js"
             - echo "Screenshot taken and saved."
+
+            # Step 6: Push the screenshot artifact
             - artifact push /tmp/screenshot.png
             - echo "Screenshot stored successfully."
 
@@ -53,3 +60,6 @@ blocks:
             - docker stop android-emulator
             - docker rm android-emulator
             - echo "Emulator stopped and container removed."
+            - docker stop ngrok
+            - docker rm ngrok
+            - echo "ngrok stopped and container removed."
