@@ -6,7 +6,7 @@ agent:
     os_image: ubuntu2004
   containers:
     - name: appium
-      image: "rgonalo/appium-emulator"  # Use the Appium Emulator Docker image
+      image: "appium/appium:latest"  # Official Appium Docker image with Appium and emulator
     - name: database
       image: 'registry.semaphoreci.com/postgres:11'
 
@@ -20,13 +20,7 @@ blocks:
             - checkout
             - apt-get update
             - apt-get install -y openjdk-11-jdk curl wget unzip erlang openssh-client  # Install missing dependencies
-            - echo "Erlang, OpenSSH, and curl installed successfully"
-            - export PATH=$PATH:/usr/bin  # Ensure correct path to binaries
-            - which ssh-agent  # Check if ssh-agent is installed and available
-            - which ssh-keyscan  # Check if ssh-keyscan is installed and available
-            - which ssh-add  # Check if ssh-add is installed and available
-            - which curl  # Check if curl is installed now
-            - echo "SSH tools and curl are available, and the PATH is updated."
+            - echo "Required tools are installed successfully"
 
   - name: Setup Appium Emulator
     dependencies: []
@@ -35,8 +29,11 @@ blocks:
         - name: Setup and Start Appium Emulator
           commands:
             - checkout
-            - echo "Using Appium Emulator Docker image for testing"
-            - echo "Appium and Emulator are already set up in the Docker image, so no further setup is required."
+            - echo "Starting the Appium Docker container with emulator..."
+            - # Start Android emulator in the background
+            - nohup /opt/android-sdk/emulator/emulator -avd test_avd -no-window -gpu swiftshader_indirect &  # Start emulator
+            - adb wait-for-device  # Wait for the emulator to fully start
+            - echo "Appium and Android Emulator are running."
 
   - name: Run Appium Test and Capture Screenshot
     dependencies:
@@ -45,8 +42,8 @@ blocks:
       jobs:
         - name: Run Appium Test
           commands:
-            - curl -sSL https://r2r.us/Appium/appium-install.sh | bash  # Install Appium if needed (this should be redundant)
-            - appium &  # Start Appium server in the background (should already be running in the container, but adding for safety)
+            - echo "Running Appium test..."
+            - appium &  # Start Appium server in the background
             - sleep 10  # Ensure Appium has time to start up
             - node appium_test.js  # Run the Appium test script
             - node capture_screenshot.js  # Capture screenshot using Appium
@@ -61,5 +58,5 @@ blocks:
         - name: Clean up
           commands:
             - echo "Cleaning up... Removing temporary files."
-            - rm -rf /tmp/screenshot.png  # Example clean-up step after artifact is pushed
+            - rm -rf /tmp/screenshot.png  # Clean-up step after artifact is pushed
             - echo "Clean-up complete"
