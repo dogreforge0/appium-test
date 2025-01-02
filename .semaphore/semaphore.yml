@@ -19,7 +19,7 @@ blocks:
           commands:
             - checkout
             - apt-get update
-            - apt-get install -y openjdk-11-jdk curl wget unzip  # Install dependencies
+            - apt-get install -y openjdk-11-jdk curl wget unzip  # Install only the necessary tools
             - wget https://dl.google.com/android/repository/commandlinetools-linux-7302050_latest.zip
             - unzip commandlinetools-linux-7302050_latest.zip -d /usr/local/android
             - yes | /usr/local/android/cmdline-tools/bin/sdkmanager --sdk_root=/usr/local/android --licenses
