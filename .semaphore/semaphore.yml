@@ -1,4 +1,4 @@
-version: v1.0  # Define the version for SemaphoreCI YAML format
+version: v1.0
 
 agent:
   machine:
@@ -26,25 +26,32 @@ blocks:
             - echo "Starting Android Emulator (Nexus 5X) and exposing VNC on port 5900..."
             - docker run -d --privileged -p 5900:5900 -p 6080:6080 -e DEVICE="Nexus_5X_API_30" --name android-emulator budtmo/docker-android
             - echo "Waiting for the Android emulator to fully initialize..."
-            - sleep 180  # Wait for the emulator to be fully ready
+            - sleep 130  # Wait for the emulator to be fully ready
 
             # Step 4: Show ngrok public URL for accessing the VNC
             - echo "ngrok tunnel established. Use the following URL to access the VNC server:"
             - docker exec ngrok /bin/sh -c "curl http://localhost:4040/api/tunnels"  # Show ngrok URL
 
-            # Step 5: Start Appium server
-            - echo "Starting Appium server..."
-            - docker exec appium /bin/bash -c "npm install -g appium"  # Install Appium if not installed
-            - docker exec appium /bin/bash -c "appium &"  # Start Appium server
+            # Step 5: Start Appium container and install Appium if not already installed
+            - echo "Starting Appium container..."
+            - docker run -d --name appium appium/appium  # Start Appium container
+            - echo "Appium container started."
+
+            # Step 6: Install Appium if not installed already
+            - docker exec appium /bin/bash -c "npm install -g appium"
+            - echo "Appium installed."
+
+            # Step 7: Start the Appium server
+            - docker exec appium /bin/bash -c "appium &"  # Start Appium server in the background
             - echo "Appium server started."
             - sleep 10  # Give Appium time to start
 
-            # Step 6: Take a screenshot using Appium (or ADB commands)
+            # Step 8: Take a screenshot using Appium (or ADB commands)
             - echo "Taking screenshot using Appium..."
             - docker exec appium /bin/bash -c "node capture_screenshot.js"
             - echo "Screenshot taken and saved."
 
-            # Step 7: Push the screenshot artifact
+            # Step 9: Push the screenshot artifact
             - artifact push /tmp/screenshot.png
             - echo "Screenshot stored successfully."
 
@@ -60,3 +67,6 @@ blocks:
             - docker stop ngrok
             - docker rm ngrok
             - echo "ngrok stopped and container removed."
+            - docker stop appium
+            - docker rm appium
+            - echo "Appium stopped and container removed."
